@@ -1,3 +1,7 @@
+MOODLE_DIR=$1
+CURRENT_VERSION=$2
+TARGET_VERSION=$3
+
 if [[ -z "$MOODLE_DIR" || -z "$CURRENT_VERSION" || -z "$TARGET_VERSION" ]]; then
     echo "Usage: $0 <moodle_root_dir> <current_version> <target_version> <php81_command> <php74_command> <php72_command> <php56_command>"
     echo "The php versions are optional"
@@ -11,19 +15,29 @@ if [[ "$backup_confirm" != "yes" ]]; then
     exit 1
 fi
 
+# Function to find the available PHP version
+find_php() {
+    if command -v "$1" &> /dev/null; then
+        echo "$1"
+    else
+        echo "php"
+    fi
+}
 
-MOODLE_DIR=$1
-CURRENT_VERSION=$2
-TARGET_VERSION=$3
+# Check if Docker exists
+if command -v docker &> /dev/null; then
+    PHP8_1="docker run --rm -v $(pwd):/app -w /app php:8.1-cli php"
+    PHP7_4="docker run --rm -v $(pwd):/app -w /app php:7.4-cli php"
+    PHP7_2="docker run --rm -v $(pwd):/app -w /app php:7.2-cli php"
+    PHP5_6="docker run --rm -v $(pwd):/app -w /app php:5.6-cli php"
+else
+    PHP8_1="${4:-$(find_php php8.1)}"
+    PHP7_4="${5:-$(find_php php7.4)}"
+    PHP7_2="${6:-$(find_php php7.2)}"
+    PHP5_6="${7:-$(find_php php5.6)}"
+fi
 
-# Use the provided PHP commands or the default ones if not supplied
-
-PHP8_1="${4:-php}"
-PHP7_4="${5:-php}"
-PHP7_2="${6:-php}"
-PHP5_6="${7:-php}"
-
-version_format() {
+fiversion_format() {
     local version=$1
     if [[ "$version" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
         if [[ "${BASH_REMATCH[2]}" -ge 10 ]]; then
