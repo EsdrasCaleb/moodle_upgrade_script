@@ -39,6 +39,7 @@ upgrade_moodle() {
     git fetch --all
     git reset --hard
     git checkout "MOODLE_${next_formatted}_STABLE"
+
     $php_version admin/cli/upgrade.php --non-interactive
     echo "Upgrade to $next completed."
 }
