@@ -15,6 +15,56 @@ if [[ "$backup_confirm" != "yes" ]]; then
     exit 1
 fi
 
+Você disse:
+in my bash script I need to check if docker exists if it exists i need this PHP commands to call a docker by default instead to use the same PHP call:
+
+PHP8_1="${4:-php}"
+PHP7_4="${5:-php}"
+PHP7_2="${6:-php}"
+PHP5_6="${7:-php}"
+O ChatGPT disse:
+ChatGPT
+
+You can check if Docker exists in your Bash script and modify the PHP variables accordingly. Here's how you can do it:
+
+#!/bin/bash
+
+# Check if Docker exists
+if command -v docker &> /dev/null; then
+    PHP8_1="docker run --rm -v $(pwd):/app -w /app php:8.1-cli php"
+    PHP7_4="docker run --rm -v $(pwd):/app -w /app php:7.4-cli php"
+    PHP7_2="docker run --rm -v $(pwd):/app -w /app php:7.2-cli php"
+    PHP5_6="docker run --rm -v $(pwd):/app -w /app php:5.6-cli php"
+else
+    PHP8_1="${4:-php}"
+    PHP7_4="${5:-php}"
+    PHP7_2="${6:-php}"
+    PHP5_6="${7:-php}"
+fi
+
+# Example usage
+$PHP8_1 -v
+$PHP7_4 -v
+$PHP7_2 -v
+$PHP5_6 -v
+
+Explanation:
+
+    It checks if docker is installed using command -v docker.
+    If Docker exists, it sets the PHP commands to use Docker containers.
+    If Docker does not exist, it defaults to the provided parameters or php.
+
+This setup allows you to seamlessly switch between native PHP and Dockerized PHP based on availability.
+Você disse:
+in else check for difrente php version before to set it eg:
+if php81 exists use if not use PHP ...
+O ChatGPT disse:
+ChatGPT
+
+You can modify the script to check if specific PHP versions are installed before setting the default PHP command. Here's how you can do it:
+
+#!/bin/bash
+
 # Function to find the available PHP version
 find_php() {
     if command -v "$1" &> /dev/null; then
@@ -36,6 +86,45 @@ else
     PHP7_2="${6:-$(find_php php7.2)}"
     PHP5_6="${7:-$(find_php php5.6)}"
 fi
+
+# Example usage
+$PHP8_1 -v
+$PHP7_4 -v
+$PHP7_2 -v
+$PHP5_6 -v
+
+
+# Function to find the best available PHP version
+find_php() {
+    local version=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
+
+    # Check if the specific PHP version is installed
+    if [[ "$version" == "$1" ]]; then
+        echo "php"
+        return
+    fi
+
+    # Check if the specific PHP version is installed
+    if command -v "php$1" &> /dev/null; then
+        echo "php$1"
+        return
+    fi
+
+    # Check if Docker is installed and use the corresponding container
+    if command -v docker &> /dev/null; then
+        echo "docker run --rm -v $(pwd):/app -w /app php:${version#php}-cli php"
+        return
+    fi
+
+    # If neither is available, fallback to the default 'php'
+    echo "php"
+}
+
+# Assign PHP versions based on priority order
+PHP8_1="${4:-$(find_php 8.1)}"
+PHP7_4="${5:-$(find_php 7.4)}"
+PHP7_2="${6:-$(find_php 7.2)}"
+PHP5_6="${7:-$(find_php 5.6)}"
 
 fiversion_format() {
     local version=$1
