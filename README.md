@@ -13,4 +13,4 @@ If your moodle is not a git folder or there are significant old plugins use the 
 bash upgrade_nonplugins.bash moodle_dir current_version destination_version
 ```
 
-#### Only work with moodle installed as git repositories
+#### If you altered the moodle core this will erase your modifications, use the non plugins variant to prevent this

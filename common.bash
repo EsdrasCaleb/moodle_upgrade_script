@@ -1,3 +1,28 @@
+if [[ -z "$MOODLE_DIR" || -z "$CURRENT_VERSION" || -z "$TARGET_VERSION" ]]; then
+    echo "Usage: $0 <moodle_root_dir> <current_version> <target_version> <php81_command> <php74_command> <php72_command> <php56_command>"
+    echo "The php versions are optional"
+    exit 1
+fi
+
+# Prompt user to confirm backup
+read -p "Have you backed up your Moodle data and database? (yes/no): " backup_confirm
+if [[ "$backup_confirm" != "yes" ]]; then
+    echo "Backup is required before proceeding. Exiting."
+    exit 1
+fi
+
+
+MOODLE_DIR=$1
+CURRENT_VERSION=$2
+TARGET_VERSION=$3
+
+# Use the provided PHP commands or the default ones if not supplied
+
+PHP8_1="${4:-php}"
+PHP7_4="${5:-php}"
+PHP7_2="${6:-php}"
+PHP5_6="${7:-php}"
+
 version_format() {
     local version=$1
     if [[ "$version" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
@@ -9,6 +34,24 @@ version_format() {
     else
         echo "Error: Invalid version format $version" >&2
         exit 1
+    fi
+}
+
+# Function to determine the correct PHP version based on Moodle version
+determine_php_version() {
+    local moodle_version=$(version_format $1)
+
+    # Determine the PHP version based on Moodle version
+    if (( $(echo "$moodle_version < 3004" | bc -l) )); then
+        echo "$PHP5_6"
+    elif (( $(echo "$moodle_version <= 3009" | bc -l) )); then
+        echo "$PHP7_2"
+    elif (( $(echo "$moodle_version <= 3008" | bc -l) )); then
+        echo "$PHP7_4"
+    elif (( $(echo "$moodle_version <= 4005" | bc -l) )); then
+        echo "$PHP8_1"
+    else
+        echo "php"
     fi
 }
 

@@ -1,33 +1,16 @@
 #!/bin/bash
 
 # Import functions from functions.sh
-source ./functions.bash
+source ./common.bash $1 $2 $3 $4 $5 $6
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
-# Prompt user to confirm backup
-read -p "Have you backed up your Moodle data and database? (yes/no): " backup_confirm
-if [[ "$backup_confirm" != "yes" ]]; then
-    echo "Backup is required before proceeding. Exiting."
-    exit 1
-fi
-
-MOODLE_DIR=$1
-CURRENT_VERSION=$2
-TARGET_VERSION=$3
-
-if [[ -z "$MOODLE_DIR" || -z "$CURRENT_VERSION" || -z "$TARGET_VERSION" ]]; then
-    echo "Usage: $0 <moodle_root_dir> <current_version> <target_version>"
-    exit 1
-fi
 
 # Ensure the Moodle directory is a git repository
 if [[ ! -d "$MOODLE_DIR/.git" ]]; then
     echo "Error: The specified Moodle directory is not a git repository."
     exit 1
 fi
-
-
 
 # Function to perform the upgrade using git
 upgrade_moodle() {
@@ -39,7 +22,8 @@ upgrade_moodle() {
         echo "Error: The specified Moodle directory is not a git repository."
         exit 1
     fi
-
+    # Determine the PHP version based on the next Moodle version
+    local php_version=$(determine_php_version "$next")
     local next_formatted=$(to_moodle_version_format "$next")
 
     echo "Upgrading Moodle from $current to $next stable..."
@@ -47,7 +31,7 @@ upgrade_moodle() {
     git fetch --all
     git reset --hard
     git checkout "MOODLE_${next_formatted}_STABLE"
-    php admin/cli/upgrade.php --non-interactive
+    $php_version admin/cli/upgrade.php --non-interactive
     echo "Upgrade to $next completed."
 }
 
