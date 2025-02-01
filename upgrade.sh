@@ -28,8 +28,23 @@ fi
 declare -A UPGRADE_PATH
 UPGRADE_PATH=(
     [1.0]=1.9 [1.9]=2.2 [2.2]=2.7 [2.7]=3.1 [3.1]=3.5
-    [3.5]=3.9 [3.9]=3.11 [3.11]=4.0 [4.0]=4.1 [4.1]=4.2 [4.2]=4.3 [4.3]=4.5
+    [3.5]=3.9 [3.6]=3.11 [3.9]=4.1 [3.11]=4.2 [4.0]=4.1 [4.1]=4.5 [4.2]=4.5 [4.3]=4.5
 )
+
+# Function to transform version string
+to_moodle_version_format() {
+    local version=$1
+    if [[ "$version" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
+        if [[ "${BASH_REMATCH[1]}" -ge 4 ]]; then
+            echo "${BASH_REMATCH[1]}0${BASH_REMATCH[2]}"
+        else
+            echo "${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
+        fi
+    else
+        echo "Error: Invalid version format $version" >&2
+        exit 1
+    fi
+}
 
 # Function to perform the upgrade using git
 upgrade_moodle() {
@@ -42,16 +57,21 @@ upgrade_moodle() {
         exit 1
     fi
 
-    echo "Upgrading Moodle from $current to $next..."
+    local next_formatted=$(to_moodle_version_format "$next")
+
+    echo "Upgrading Moodle from $current to $next stable..."
     cd "$dir"
     git fetch --all
-    git checkout "MOODLE_$next_STABLE"
+    git reset --hard
+    git checkout "MOODLE_${next_formatted}_STABLE"
     php admin/cli/upgrade.php --non-interactive
     echo "Upgrade to $next completed."
 }
 
 # Perform the upgrade step-by-step
 current=$CURRENT_VERSION
+#update to the current stable
+upgrade_moodle "$current" "$current" "$MOODLE_DIR"
 while [[ "$current" != "$TARGET_VERSION" ]]; do
     if [[ -z "${UPGRADE_PATH[$current]}" ]]; then
         echo "No upgrade path found from version $current. Check Moodle's upgrade documentation."

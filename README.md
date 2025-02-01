@@ -4,7 +4,7 @@ This bash script made helps you upgrade the moodle in cli without the need of hu
 # Usage
 To use simple
 ```
-sh upgrade.sh moodle_dir current_version destination_version
+bash upgrade.sh moodle_dir current_version destination_version
 ```
 We do not make downgrades
 
